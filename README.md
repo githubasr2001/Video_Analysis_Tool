@@ -2,6 +2,10 @@
 
 A Streamlit-based web application for analyzing video files through frame extraction, feature analysis, and dimensionality reduction visualization.
 
+# Live Demo
+
+The application is live at: https://frameflow-analytics.streamlit.app/
+
 ## Features
 
 - Frame extraction from various video formats (MP4, AVI, MOV, MKV, WMV)
