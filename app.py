@@ -16,7 +16,22 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 
+def check_file_size(file):
+    """Check if file size is within limit (200MB)"""
+    MAX_SIZE = 200 * 1024 * 1024  # 200MB in bytes
+    
+    if hasattr(file, 'size'):
+        file_size = file.size
+    else:
+        # Fallback method if size attribute is not available
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        
+    return file_size <= MAX_SIZE, file_size / (1024 * 1024)  # Return size in MB
+
 class VideoAnalyzer:
+    # [Previous VideoAnalyzer class code remains exactly the same]
     def __init__(self):
         self.features = None
         self.reduced_features = None
