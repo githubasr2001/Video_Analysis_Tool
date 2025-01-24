@@ -36,6 +36,7 @@ class VideoAnalyzer:
         self.frames_data = []
         self.motion_data = []
         self.scene_changes = []
+        self.frame_paths = []  # Store frame file paths
         
     def extract_frames(self, video_path, temp_dir):
         """
@@ -62,8 +63,12 @@ class VideoAnalyzer:
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 
                 # Save frame
-                frame_path = os.path.join(temp_dir, f"frame_{saved_frame_count:04d}.jpg")
+                frame_filename = f"frame_{saved_frame_count:04d}.jpg"
+                frame_path = os.path.join(temp_dir, frame_filename)
                 cv2.imwrite(frame_path, cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR))
+                
+                # Store frame path for ZIP creation
+                self.frame_paths.append(frame_path)
                 
                 # Calculate motion if possible
                 if prev_frame is not None:
@@ -84,6 +89,19 @@ class VideoAnalyzer:
         
         cap.release()
         return saved_frame_count, fps
+    
+    def create_frames_zip(self):
+        """
+        Create ZIP file of extracted frames
+        
+        :return: BytesIO object containing ZIP file
+        """
+        frames_zip = BytesIO()
+        with ZipFile(frames_zip, 'w') as zip_file:
+            for frame_path in self.frame_paths:
+                zip_file.write(frame_path, os.path.basename(frame_path))
+        frames_zip.seek(0)
+        return frames_zip
 
     def calculate_motion(self, prev_frame, curr_frame):
         """Calculate motion between consecutive frames"""
@@ -192,19 +210,34 @@ def main():
                 frame_count, fps = analyzer.extract_frames(temp_video_path, temp_dir)
                 st.success(f"Extracted {frame_count} frames")
             
+            # Downloads section
+            st.header("Downloads")
+            col1, col2 = st.columns(2)
+            
+            # Frame ZIP download
+            with col1:
+                frames_zip = analyzer.create_frames_zip()
+                st.download_button(
+                    "Download Frames (ZIP)",
+                    frames_zip.getvalue(),
+                    "video_frames.zip",
+                    "application/zip"
+                )
+            
             # Feature extraction
             with st.spinner("Extracting features..."):
                 features_df = analyzer.extract_features()
                 
                 # Download features
-                csv_buffer = BytesIO()
-                features_df.to_csv(csv_buffer, index=False)
-                st.download_button(
-                    "Download Features",
-                    csv_buffer.getvalue(),
-                    "video_features.csv",
-                    "text/csv"
-                )
+                with col2:
+                    csv_buffer = BytesIO()
+                    features_df.to_csv(csv_buffer, index=False)
+                    st.download_button(
+                        "Download Features (CSV)",
+                        csv_buffer.getvalue(),
+                        "video_features.csv",
+                        "text/csv"
+                    )
             
             # Visualization
             with st.spinner("Creating analysis dashboard..."):
